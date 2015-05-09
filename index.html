@@ -1,0 +1,109 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Double Arrow</title>
+  <style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    font-family: "Open Sans", sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  .header {
+    padding: 2rem;
+  }
+  .input {
+    background: #ddd;
+    padding: 0.5rem;
+    width: 640px;
+  }
+  input[type="number"] {
+    font-size: 14px;
+    width: 40px;
+  }
+  select {
+    font-size: 16px;
+  }
+  .toggle {
+    color: blue;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .main {
+    padding: 0;
+  }
+  .columns {
+    display: flex;
+    flex-flow: row nowrap;
+    overflow-x: scroll;
+    padding-left: 2rem;
+  }
+  .column {
+    margin-right: 0.25rem;
+    min-width: 200px;
+  }
+  .column.dragging {
+    z-index: 100;
+  }
+  .column-header {
+    background: #ccddee;
+    cursor: -webkit-grab;
+    cursor: -moz-grab;
+    cursor: grab;
+    margin-bottom: 0.25rem;
+    padding: 0.25rem;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  .init .column-header {
+    cursor: default;
+  }
+  .dragging .column-header,
+  .selected .column-header {
+    background: mediumpurple;
+    color: white;
+  }
+  .dragging .column-header {
+    cursor: -webkit-grabbing;
+    cursor: -moz-grabbing;
+    cursor: grabbing;
+  }
+  .row {
+    background: #eee;
+    font-family: monospace;
+    margin-bottom: 0.25rem;
+    padding: 0.25rem;
+  }
+  .row.accept {
+    background: lightgreen;
+  }
+  .row.reject {
+    background: pink;
+    opacity: 0.5;
+  }
+  .select .row {
+    cursor: pointer;
+  }
+  .column-builder-header {
+    padding: 0.25rem;
+  }
+  .column-builder-header select {
+    margin-top: 2px;
+  }
+  </style>
+  <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">
+  <link href='http://fonts.googleapis.com/css?family=Open+Sans:400italic,700italic,700,400' rel='stylesheet' type='text/css'>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="target/app.js"></script>
+</body>
+</html>
