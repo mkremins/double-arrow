@@ -100,12 +100,19 @@
   (let [init-rows (parse-input data)]
     (loop [rows init-rows
            new-columns []
-           old-columns (:columns data)]
+           old-columns (map #(dissoc % :error :rows) (:columns data))]
       (if-let [column (first old-columns)]
-        (let [[rows-for-column rows-to-pass-on] (populate column rows)]
-          (recur rows-to-pass-on
-                 (conj new-columns (assoc column :rows (vec rows-for-column)))
-                 (rest old-columns)))
+        (try
+          (let [[rows-for-column rows-to-pass-on] (populate column rows)]
+            (recur rows-to-pass-on
+                   (conj new-columns (assoc column :rows (vec rows-for-column)))
+                   (rest old-columns)))
+          (catch js/Error err
+            (recur nil
+                   `[~@new-columns
+                     ~(assoc column :error (.-message err))
+                     ~@(rest old-columns)]
+                   nil)))
         (assoc data :columns new-columns :init-rows init-rows)))))
 
 (defonce app-state
@@ -213,8 +220,10 @@
                                  {:offset (- (.-clientX %) init) :id (:id data)}))
                    (om/set-state! owner {}))}
         (om/build column-header-contents data))
-      (om/build-all (if (filtering-column? data) maybe-row simple-row)
-                    (:rows data)))))
+      (if-let [error (:error data)]
+        (dom/p {:class "error"} error)
+        (om/build-all (if (filtering-column? data) maybe-row simple-row)
+                      (:rows data))))))
 
 (doseq [[type label] {:drop "Drop the first "
                       :drop-last "Drop the last "
