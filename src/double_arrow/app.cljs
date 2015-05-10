@@ -5,8 +5,6 @@
             [om-tools.dom :as dom])
   (:require-macros [cljs.core.async.macros :refer [go-loop]]))
 
-(enable-console-print!)
-
 ;;; miscellaneous helpers
 
 (defn remove-item [v idx]
@@ -143,6 +141,9 @@
                          (max 0)
                          (min (dec (count (:columns data)))))]
       (update data :columns move-item column-idx target-idx))))
+
+(defn delete-selected-columns [data]
+  (update data :columns #(vec (remove :selected? %))))
 
 ;;; Om components
 
@@ -284,9 +285,20 @@
           (om/build-all column (with-indices :id (:columns data)))
           (om/build column-builder data))))))
 
-(om/root app app-state
-  {:shared {:drag-ch (async/chan)}
-   :target (js/document.getElementById "app")
-   :tx-listen (fn [{:keys [tag]} data]
-                (when-not (= tag :populate)
-                  (om/transact! data [] populate-columns :populate)))})
+(defn handle-keydown! [ev]
+  (when (and (= (.-keyCode ev) 8) ; backspace
+             (not (input-element? (.-target ev))))
+    (.preventDefault ev)
+    (om/transact! (om/root-cursor app-state) [] delete-selected-columns)))
+
+(defn -main []
+  (enable-console-print!)
+  (om/root app app-state
+    {:shared {:drag-ch (async/chan)}
+     :target (js/document.getElementById "app")
+     :tx-listen (fn [{:keys [tag]} data]
+                  (when-not (= tag :populate)
+                    (om/transact! data [] populate-columns :populate)))})
+  (js/document.addEventListener "keydown" handle-keydown!))
+
+(-main)
