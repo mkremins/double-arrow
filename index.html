@@ -73,6 +73,30 @@
     cursor: -moz-grabbing;
     cursor: grabbing;
   }
+  .function-picker {
+    display: inline-block;
+    position: relative;
+  }
+  .function-picker input[type="text"] {
+    font-size: 14px;
+    width: 5rem;
+  }
+  .completions {
+    background: white;
+    border: 1px solid #eee;
+    cursor: pointer;
+    font-family: "Helvetica Neue", sans-serif;
+    font-size: 0.9rem;
+    position: absolute;
+    top: 22px;
+    z-index: 200;
+  }
+  .completion {
+    padding: 0 1px;
+  }
+  .completion.selected {
+    background: #eeccff;
+  }
   .row {
     background: #eee;
     font-family: monospace;

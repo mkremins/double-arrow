@@ -7,6 +7,11 @@
 
 ;;; miscellaneous helpers
 
+(defn common-prefix [xs ys]
+  (->> (map vector xs ys)
+       (take-while #(= (first %) (second %)))
+       (map first)))
+
 (defn remove-item [v idx]
   (vec (concat (subvec v 0 idx) (subvec v (inc idx) (count v)))))
 
@@ -27,7 +32,8 @@
   (.. ev -target -value))
 
 (defn input-element? [elem]
-  (#{"INPUT" "SELECT" "TEXTAREA"} (.-tagName elem)))
+  (or (#{"INPUT" "SELECT" "TEXTAREA"} (.-tagName elem))
+      (.. elem -classList (contains "completion"))))
 
 ;;; app state management
 
@@ -43,9 +49,20 @@
     ()))
 
 (def lookup-fn
-  {"even?" even? "odd?" odd?
-   "dec" dec "inc" inc "str" str
-   "identity" identity})
+  {"boolean" boolean "dec" dec "even?" even? "false?" false?
+   "identity" identity "inc" inc "keyword" keyword "keyword?" keyword?
+   "name" name "namespace" namespace "neg?" neg? "nil?" nil? "number?" number?
+   "odd?" odd? "pos?" pos? "str" str "string?" string? "symbol" symbol
+   "symbol?" symbol? "true?" true? "zero?" zero?})
+
+(defn completions [text]
+  (if (seq text)
+    (->> (keys lookup-fn)
+         (map (juxt identity #(count (common-prefix % text))))
+         (filter (comp pos? second))
+         (sort-by second >)
+         (mapv first))
+    (vec (keys lookup-fn))))
 
 (defmulti populate
   "Given a `column` and the `rows` passed in from the previous column, should
@@ -159,6 +176,48 @@
     (dom/input {:on-change #(om/update! data path (js/parseFloat (value %)))
                 :type "number" :value (path data)})))
 
+(defcomponent function-picker [data owner {:keys [path]}]
+  (init-state [_]
+    {:completions [] :focused? false :sel 0})
+  (will-receive-props [_ next-props]
+    (let [text (path next-props)]
+      (when-not (= text (path (om/get-props owner)))
+        (om/set-state! owner :completions (completions text))
+        (om/set-state! owner :sel 0))))
+  (render-state [_ state]
+    (dom/div {:class "function-picker"}
+      (dom/input {:on-blur #(om/set-state! owner :focused? false)
+                  :on-change #(om/update! data path (value %))
+                  :on-focus #(om/set-state! owner :focused? true)
+                  :on-key-down
+                  #(let [{:keys [completions sel]} (om/get-state owner)
+                         max-sel (max (dec (count completions)) 0)]
+                     (case (.-keyCode %)
+                       9 ; tab
+                         (when-let [completion (get completions sel)]
+                           (.preventDefault %)
+                           (om/update! data path completion))
+                       38 ; up
+                         (let [sel' (dec sel)]
+                           (.preventDefault %)
+                           (om/set-state! owner :sel (if (neg? sel') max-sel sel')))
+                       40 ; down
+                         (let [sel' (inc sel)]
+                           (.preventDefault %)
+                           (om/set-state! owner :sel (if (> sel' max-sel) 0 sel')))
+                       nil))
+                  :type "text"
+                  :value (path data)})
+      (when (:focused? state)
+        (dom/div {:class "completions"}
+          (let [{:keys [completions sel]} state]
+            (for [i (range (count completions))
+                  :let [completion (nth completions i)]]
+              (dom/div {:class (cond-> "completion" (= i sel) (str " selected"))
+                        :on-mouse-down #(om/update! data path completion)
+                        :on-mouse-enter #(om/set-state! owner :sel i)}
+                completion))))))))
+
 (defcomponent input [data owner]
   (render [_]
     (dom/div {:class "input"}
@@ -237,19 +296,13 @@
   (render [_]
     (dom/span
       "Filter by "
-      (dom/select {:on-change #(om/update! data :predicate (value %))
-                   :value (:predicate data)}
-        (for [predicate ["identity" "even?" "odd?"]]
-          (dom/option {:value predicate} predicate))))))
+      (om/build function-picker data {:opts {:path :predicate}}))))
 
 (defcomponentmethod column-header-contents :map [data owner]
   (render [_]
     (dom/span
       "Apply "
-      (dom/select {:on-change #(om/update! data :function (value %))
-                   :value (:function data)}
-        (for [function ["identity" "dec" "inc" "str"]]
-          (dom/option {:value function} function)))
+      (om/build function-picker data {:opts {:path :function}})
       " to each")))
 
 (defcomponentmethod column-header-contents :reverse [_ _]
