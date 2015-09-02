@@ -57,12 +57,12 @@
 
 (defn completions [text]
   (if (seq text)
-    (->> (keys lookup-fn)
+    (->> (sort (keys lookup-fn))
          (map (juxt identity #(count (common-prefix % text))))
          (filter (comp pos? second))
          (sort-by second >)
          (mapv first))
-    (vec (keys lookup-fn))))
+    (vec (sort (keys lookup-fn)))))
 
 (defmulti populate
   "Given a `column` and the `rows` passed in from the previous column, should
