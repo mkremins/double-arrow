@@ -7,11 +7,6 @@
 
 ;;; miscellaneous helpers
 
-(defn common-prefix [xs ys]
-  (->> (map vector xs ys)
-       (take-while #(= (first %) (second %)))
-       (map first)))
-
 (defn remove-item [v idx]
   (vec (concat (subvec v 0 idx) (subvec v (inc idx) (count v)))))
 
@@ -58,9 +53,9 @@
 (defn completions [text]
   (if (seq text)
     (->> (sort (keys lookup-fn))
-         (map (juxt identity #(count (common-prefix % text))))
-         (filter (comp pos? second))
-         (sort-by second >)
+         (map (juxt identity #(.indexOf % text)))
+         (filter #(>= (second %) 0))
+         (sort-by second)
          (mapv first))
     (vec (sort (keys lookup-fn)))))
 
