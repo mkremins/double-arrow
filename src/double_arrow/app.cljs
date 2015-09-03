@@ -50,14 +50,18 @@
    "odd?" odd? "pos?" pos? "str" str "string?" string? "symbol" symbol
    "symbol?" symbol? "true?" true? "zero?" zero?})
 
+(defn slice-substring [sup sub]
+  (let [start (.indexOf sup sub)
+        end (+ start (count sub))]
+    (when-not (= start -1)
+      [sup (subs sup 0 start) (subs sup start end) (subs sup end)])))
+
 (defn completions [text]
-  (if (seq text)
-    (->> (sort (keys lookup-fn))
-         (map (juxt identity #(.indexOf % text)))
-         (filter #(>= (second %) 0))
-         (sort-by second)
-         (mapv first))
-    (vec (sort (keys lookup-fn)))))
+  (->> (sort (keys lookup-fn))
+       (map #(slice-substring % text))
+       (filter identity)
+       (sort-by (comp count second))
+       vec))
 
 (defmulti populate
   "Given a `column` and the `rows` passed in from the previous column, should
@@ -189,7 +193,7 @@
                          max-sel (max (dec (count completions)) 0)]
                      (case (.-keyCode %)
                        9 ; tab
-                         (when-let [completion (get completions sel)]
+                         (when-let [[completion] (get completions sel)]
                            (.preventDefault %)
                            (om/update! data path completion))
                        38 ; up
@@ -207,11 +211,12 @@
         (dom/div {:class "completions"}
           (let [{:keys [completions sel]} state]
             (for [i (range (count completions))
-                  :let [completion (nth completions i)]]
+                  :let [[completion before match after] (nth completions i)]]
               (dom/div {:class (cond-> "completion" (= i sel) (str " selected"))
-                        :on-mouse-down #(om/update! data path completion)
+                        :on-mouse-down #(do (.stopPropagation %)
+                                            (om/update! data path completion))
                         :on-mouse-enter #(om/set-state! owner :sel i)}
-                completion))))))))
+                before (dom/strong match) after))))))))
 
 (defcomponent input [data owner]
   (render [_]
